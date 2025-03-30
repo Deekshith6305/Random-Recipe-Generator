@@ -59,23 +59,34 @@ form input[type="submit"]:hover {
     background-color: #0056b3;
 }
 
+/* Updated Generated Recipe Styling */
 .generated-recipe {
     margin-top: 30px;
+    padding: 20px;
+    background-color: #f1f1f1;
+    border-radius: 8px;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+    white-space: pre-line; /* Ensures line breaks are preserved */
+    line-height: 1.8;
 }
 
-.generated-recipe h3 {
-    color: #007bff;
-    font-size: 24px;
-    margin-bottom: 15px;
+/* Ensure Markdown formatting like bold and lists are displayed correctly */
+.generated-recipe strong {
+    font-weight: bold;
+}
+
+.generated-recipe em {
+    font-style: italic;
 }
 
 .generated-recipe ul {
-    list-style-type: none;
-    padding: 0;
+    list-style-type: disc;
+    padding-left: 20px;
 }
 
-.generated-recipe li {
-    margin-bottom: 10px;
+.generated-recipe ol {
+    list-style-type: decimal;
+    padding-left: 20px;
 }
 
 .generated-recipe p {

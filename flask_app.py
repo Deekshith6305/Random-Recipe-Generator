@@ -1,21 +1,30 @@
+import os
+import requests
+import markdown  # Import markdown module
 from flask import Flask, request
-
-import google.generativeai as genai
 
 app = Flask(__name__)
 
-def generate_recipe(ingredients, filters, dine_preference, diet_preference, api_key):
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-pro')
+# Configure Gemini API
+API_KEY = "AIzaSyCrUlzPEtNAWEANTmLcM7dOgcQiV1M7zAs"  # Hardcoded API key (not recommended)
 
+def generate_recipe(ingredients, filters, dine_preference, diet_preference):
     prompt = f"Generate a {diet_preference} {dine_preference} recipe using the following ingredients: {', '.join(ingredients)}"
-
-    # Add filtering options to the prompt
     if filters:
         prompt += f" with {', '.join(filters)}"
-
-    response = model.generate_content(prompt)
-    return response.text
+    
+    # Call Gemini-2.0-Flash API
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={API_KEY}"
+    headers = {"Content-Type": "application/json"}
+    data = {"contents": [{"parts": [{"text": prompt}]}]}
+    
+    response = requests.post(url, headers=headers, json=data)
+    response_json = response.json()
+    
+    if "candidates" in response_json:
+        return response_json["candidates"][0]["content"]["parts"][0]["text"]
+    else:
+        return "Error generating recipe. Please try again."
 
 @app.route('/')
 def index():
@@ -23,52 +32,7 @@ def index():
     <html>
     <head>
         <title>Recipe Generator</title>
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-                background-color: #f4f4f4;
-            }
-
-            .container {
-                max-width: 600px;
-                margin: 0 auto;
-                padding: 20px;
-                background-color: #fff;
-                border-radius: 5px;
-                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            }
-
-            h2 {
-                color: #333;
-            }
-
-            form label {
-                display: block;
-                margin-bottom: 5px;
-            }
-
-            form input[type="text"],
-            form select {
-                width: 100%;
-                padding: 8px;
-                margin-bottom: 10px;
-                border: 1px solid #ccc;
-                border-radius: 3px;
-            }
-
-            form input[type="submit"] {
-                background-color: #007bff;
-                color: #fff;
-                padding: 10px 20px;
-                border: none;
-                border-radius: 3px;
-                cursor: pointer;
-            }
-
-            form input[type="submit"]:hover {
-                background-color: #0056b3;
-            }
-        </style>
+        <link rel="stylesheet" type="text/css" href="/static/styles.css">
     </head>
     <body>
         <div class="container">
@@ -99,17 +63,16 @@ def index():
 
 @app.route('/generate_recipe', methods=['POST'])
 def generate():
-    user_input = request.form['ingredients']
-    ingredients = [ingredient.strip() for ingredient in user_input.split(',')]
+    ingredients = request.form.get("ingredients", "").split(',')
+    filters = request.form.get("filters", "").split(',')
+    dine_preference = request.form.get("dine_preference", "")
+    diet_preference = request.form.get("diet_preference", "")
+    
+    generated_recipe = generate_recipe(ingredients, filters, dine_preference, diet_preference)
 
-    user_filters = request.form['filters']
-    filters = [f.strip() for f in user_filters.split(',')]
+    # Convert Markdown syntax (**bold**, *italic*, etc.) to proper HTML
+    formatted_recipe = markdown.markdown(generated_recipe)
 
-    dine_preference = request.form['dine_preference']
-    diet_preference = request.form['diet_preference']
-
-    api_key = 'AIzaSyCrUlzPEtNAWEANTmLcM7dOgcQiV1M7zAs'
-    generated_recipe = generate_recipe(ingredients, filters, dine_preference, diet_preference, api_key)
     return f'''
     <html>
     <head>
@@ -119,7 +82,7 @@ def generate():
     <body>
         <div class="container generated-recipe">
             <h2>Generated Recipe</h2>
-            <p>{generated_recipe}</p>
+            <p>{formatted_recipe}</p>
             <br>
             <a href="/">Back to Recipe Generator</a>
         </div>
@@ -129,3 +92,4 @@ def generate():
 
 if __name__ == '__main__':
     app.run(debug=True, port=6000)
+
